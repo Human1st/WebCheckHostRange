@@ -3,26 +3,28 @@
 import sys
 import requests
 import ipaddress
+import argparse
 
 def main():
-    if len(sys.argv) == 4:
-        range = sys.argv[1]
-        host = sys.argv[2]
-        port = sys.argv[3]
-        print("Range to scan:", range)
-        print("Host to check:", host)
-        print("Port:",port)
-        headers = {'Host':host}
-        for ip in ipaddress.IPv4Network(range, False):
-            print("Checking address:", ip)
-            try:
-                r = requests.get("http://"+str(ip)+":"+port,headers=headers, timeout=2)
-                print(r.text)
-            except:
-                print("This address doesn't seem to work")
-        
-    else:
-        print("Please launch the software using this command scheme: ./WebCheckHostRange.py 127.0.0.1/32 google.com 80")
+    parser = argparse.ArgumentParser(description='Search for host in an ip range')
+    parser.add_argument("--iprange", "-r", type=str, nargs="+", help="The ip range that we will search in", required=True)
+    parser.add_argument('--host', '-i', type=str, nargs="+", help="Host to search for", required=True)
+    parser.add_argument('--port', '-p', type=int, nargs="+", help="Port to use", default=80)
+    args = parser.parse_args()
+    range = str(args.iprange[0])
+    host = str(args.host[0])
+    port = args.port
+    print("Range to scan:", range)
+    print("Host to check:", host)
+    print("Port:",port)
+    headers = {'Host':host}
+    for ip in ipaddress.IPv4Network(range, False):
+        print("Checking address:", ip)
+        try:
+            r = requests.get("http://"+str(ip)+":"+str(port),headers=headers, timeout=2)
+            print(r.text)
+        except:
+            print("This address doesn't seem to work")
 
 if __name__ == "__main__":
     main()
