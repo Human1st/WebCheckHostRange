@@ -16,7 +16,7 @@ Install WebCheckHostRange
 ## Example
 
 ```bash
-python3 -r 127.0.0.1/32 -i google.com -k Google -p 80
+python3 -r 127.0.0.1/32 -i google.com -k Google -p 80 2>/dev/null
 ```
 ## Authors
 

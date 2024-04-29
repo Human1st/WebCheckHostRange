@@ -4,6 +4,17 @@ import sys
 import requests
 import ipaddress
 import argparse
+import concurrent.futures
+
+def check_ip(ip, host,keyword,port):
+    headers = {'Host':host}
+    try:
+        r = requests.get("http://"+str(ip)+":"+str(port),headers=headers, timeout=2)
+        if keyword in r.text:
+            print("Potential match with:","http://"+str(ip)+":"+str(port))
+    except Exception as e:
+        print("This address doesn't seem to work: ",e,file=sys.stderr)
+
 
 def main():
     parser = argparse.ArgumentParser(description='Search for host in an ip range')
@@ -11,6 +22,7 @@ def main():
     parser.add_argument('--host', '-i', type=str, nargs="+", help="Host to search for", required=True)
     parser.add_argument('--port', '-p', type=int, nargs="+", help="Port to use", default=80)
     parser.add_argument('--keyword', '-k', type=str, nargs="+", help="Keyword to validate the page", required=True)
+    parser.add_argument('--threads', '-t', type=int, nargs="+", help="Threads to power the scan", default=200)
     args = parser.parse_args()
     range = str(args.iprange[0])
     host = str(args.host[0])
@@ -19,15 +31,17 @@ def main():
     print("Range to scan:", range)
     print("Host to check:", host)
     print("Port:",port)
-    headers = {'Host':host}
-    for ip in ipaddress.IPv4Network(range, False):
-        print("Checking address:", ip)
-        try:
-            r = requests.get("http://"+str(ip)+":"+str(port),headers=headers, timeout=2)
-            if keyword in r.text:
-                print("Potential match with:","http://"+str(ip)+":"+str(port))
-        except:
-            print("This address doesn't seem to work")
+    
+    with concurrent.futures.ThreadPoolExecutor(max_workers = 400) as executor:
+        future_to_url = {executor.submit(check_ip, ip, host, keyword, port): ip for ip in ipaddress.IPv4Network(range, False)}
+        for future in concurrent.futures.as_completed(future_to_url):
+            url = future_to_url[future]
+            try:
+                data = future.result()
+            except Exception as exc:
+                print('%r generated an exception: %s' % (url, exc),file=sys.stderr)
+    
+        
 
 if __name__ == "__main__":
     main()
