@@ -11,17 +11,17 @@ def check_ip(ip, host,keyword,port):
     headers = {'Host':host}
     try:
         if port == 443:
-            url = "https://"+str(ip)
+            url = "https://"+ip
         else:
-            url = "http://"+str(ip)+":"+str(port)
+            url = "http://"+ip+":"+str(port)
         response = requests.get(url,headers=headers, timeout=2)
         if keyword in response.text:
-            print("Keyword match with:","http://"+str(ip)+":"+str(port),host)
+            print("Keyword match with:","http://"+ip+":"+str(port),host)
         else:
             headers = {'Host':"nohost.com"}
             response2 = requests.get(url,headers=headers, timeout=2)
             if len(response.text) != len(response2.text):
-                print("Differencial match with:","http://"+str(ip)+":"+str(port),host)
+                print("Differencial match with:","http://"+ip+":"+str(port),host)
     except Exception as e:
         print("This address doesn't seem to work: ",e,file=sys.stderr)
 def scan(ips, host, keyword, port):
@@ -49,7 +49,10 @@ def launchIpScan(host, keyword, port, args):
         print("Range to scan:", range)
         print("Host to check:", host)
         print("Port:",port)
-        scan(ipaddress.IPv4Network(range, False), host, keyword, port)
+        ips = []
+        for ip in ipaddress.IPv4Network(range, False):
+            ips.append(str(ip))
+        scan(ips, host, keyword, port)
     else:
         print("You must specify a method to scan (Either file or iprange)")
 
