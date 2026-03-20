@@ -6,7 +6,22 @@ import ipaddress
 import argparse
 import concurrent.futures
 import random
+import string
 
+def revertDns(host):
+    hostparts = host.split(".")
+    rvhost = ""
+    for part in hostparts:
+        rvhost = rvhost +"."+part[::-1]
+    return rvhost[1:]
+def generateRandomDnsWithSameLength(host):
+    hostparts = host.split(".")
+    rvhost = ""
+    for part in hostparts:
+        rvhost = rvhost +"."+''.join(random.choices(string.ascii_lowercase, k=len(part[::-1])))
+    return rvhost[1:]
+    return host
+    
 def check_ip(ip, host,keyword,port):
     headers = {'Host':host}
     try:
@@ -14,14 +29,19 @@ def check_ip(ip, host,keyword,port):
             url = "https://"+ip
         else:
             url = "http://"+ip+":"+str(port)
-        response = requests.get(url,headers=headers, timeout=2)
+        response = requests.get(url,headers=headers, timeout=2, allow_redirects=False)
         if keyword in response.text:
             print("Keyword match with:","http://"+ip+":"+str(port),host)
         else:
-            headers = {'Host':"nohost.com"}
-            response2 = requests.get(url,headers=headers, timeout=2)
-            if len(response.text) != len(response2.text):
-                print("Differencial match with:","http://"+ip+":"+str(port),host)
+            reversed_host = revertDns(host)
+            response2 = requests.get(url,headers={'Host':reversed_host}, timeout=2, allow_redirects=False)
+            if len(response.text.strip(host)) != len(response2.text.strip(reversed_host)):
+                random_host = generateRandomDnsWithSameLength(host)
+                response3 = requests.get(url,headers={'Host':random_host}, timeout=2, allow_redirects=False)
+                if len(response2.text.strip(reversed_host)) == len(response3.text.strip(random_host)):
+                    print("Differencial match with:","http://"+ip+":"+str(port),host)
+                else:
+                    print("Differencial match with instable site:","http://"+ip+":"+str(port),host)
     except Exception as e:
         print("This address doesn't seem to work: ",e,file=sys.stderr)
 def scan(ips, host, keyword, port):
